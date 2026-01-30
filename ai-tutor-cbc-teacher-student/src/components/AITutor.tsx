@@ -1,6 +1,7 @@
-import { Send, Bot, User, Brain, Clock, BookOpen, Zap, Trash2, Loader } from 'lucide-react';
+import { Send, Bot, User, Brain, Clock, BookOpen, Zap, Trash2, Loader, AlertCircle } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
-import { CBE_SUBJECTS, CBE_COMPETENCIES, simulateLangChainResponse } from '../utils/mockData';
+import { CBE_SUBJECTS, CBE_COMPETENCIES } from '../utils/mockData';
+import { tutorAPI, ChatResponse } from '../utils/tutorAPI';
 
 interface Message {
   id: string;
@@ -9,6 +10,7 @@ interface Message {
   timestamp: Date;
   subject?: string;
   competency?: string;
+  suggestedFollowup?: string;
 }
 
 const initialMessages: Message[] = [
@@ -40,13 +42,29 @@ export function AITutor() {
     return saved ? JSON.parse(saved).map((msg: any) => ({
       ...msg,
       timestamp: new Date(msg.timestamp)
-    })) : initialMessages;
+    })) : [];
   });
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [selectedSubject, setSelectedSubject] = useState<string>('Mathematics');
+  const [selectedGrade, setSelectedGrade] = useState<number>(8);
   const [selectedCompetency, setSelectedCompetency] = useState<string>('Critical Thinking');
+  const [conversationId, setConversationId] = useState<string | null>(null);
+  const [isBackendConnected, setIsBackendConnected] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Check backend connection on mount
+  useEffect(() => {
+    const checkBackend = async () => {
+      const isConnected = await tutorAPI.health();
+      setIsBackendConnected(isConnected);
+      if (!isConnected) {
+        setError("⚠️ Backend server not connected. Using local mode.");
+      }
+    };
+    checkBackend();
+  }, []);
 
   useEffect(() => {
     localStorage.setItem('aiTutorMessages', JSON.stringify(messages));
@@ -56,17 +74,33 @@ export function AITutor() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  const simulateAIResponse = async (userMessage: string): Promise<string> => {
-    const context = {
-      subject: selectedSubject,
-      competency: selectedCompetency,
-      history: messages.slice(-5).map(m => ({ sender: m.sender, content: m.content }))
-    };
-    return await simulateLangChainResponse(userMessage, context);
+  const sendMessageToBackend = async (userMessage: string): Promise<string> => {
+    try {
+      const response: ChatResponse = await tutorAPI.chat({
+        message: userMessage,
+        subject: selectedSubject,
+        grade: selectedGrade,
+        conversation_id: conversationId || undefined,
+        language: 'English',
+      });
+
+      // Store conversation ID for follow-ups
+      if (!conversationId) {
+        setConversationId(response.conversation_id);
+      }
+
+      return response.message;
+    } catch (err) {
+      console.error('Backend error:', err);
+      setError(`Error: ${err instanceof Error ? err.message : 'Unknown error'}`);
+      throw err;
+    }
   };
 
   const handleSend = async () => {
     if (!input.trim()) return;
+
+    setError(null);
 
     const userMessage: Message = {
       id: Date.now().toString(),
@@ -74,30 +108,41 @@ export function AITutor() {
       sender: 'user',
       timestamp: new Date(),
       subject: selectedSubject,
-      competency: selectedCompetency,
     };
 
     setMessages(prev => [...prev, userMessage]);
     setInput('');
     setIsLoading(true);
 
-    const aiResponse = await simulateAIResponse(input);
+    try {
+      const aiResponse = await sendMessageToBackend(input);
 
-    const aiMessage: Message = {
-      id: (Date.now() + 1).toString(),
-      content: aiResponse,
-      sender: 'ai',
-      timestamp: new Date(),
-      subject: selectedSubject,
-      competency: selectedCompetency,
-    };
+      const aiMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        content: aiResponse,
+        sender: 'ai',
+        timestamp: new Date(),
+        subject: selectedSubject,
+      };
 
-    setMessages(prev => [...prev, aiMessage]);
-    setIsLoading(false);
+      setMessages(prev => [...prev, aiMessage]);
+    } catch (err) {
+      setError('Failed to get response from AI tutor');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleClearHistory = () => {
-    setMessages(initialMessages);
+  const handleClearHistory = async () => {
+    setMessages([]);
+    if (conversationId) {
+      try {
+        await tutorAPI.clearConversation(conversationId);
+        setConversationId(null);
+      } catch (err) {
+        console.error('Failed to clear conversation:', err);
+      }
+    }
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -108,10 +153,32 @@ export function AITutor() {
   };
 
   const subjects = CBC_SUBJECTS.map(s => s.name);
-  const competencies = CBC_COMPETENCIES.map(c => c.name);
+  const grades = [6, 7, 8, 9];
 
   return (
     <div className="space-y-6">
+      {/* Connection Status Banner */}
+      {!isBackendConnected && (
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 flex items-start">
+          <AlertCircle className="h-5 w-5 text-yellow-600 mr-3 mt-0.5 flex-shrink-0" />
+          <div>
+            <h3 className="font-semibold text-yellow-800">Backend Offline</h3>
+            <p className="text-sm text-yellow-700">Make sure the backend server is running: <code>python -m uvicorn main:app --reload</code></p>
+          </div>
+        </div>
+      )}
+
+      {/* Error Message */}
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-start">
+          <AlertCircle className="h-5 w-5 text-red-600 mr-3 mt-0.5 flex-shrink-0" />
+          <div>
+            <h3 className="font-semibold text-red-800">Error</h3>
+            <p className="text-sm text-red-700">{error}</p>
+          </div>
+        </div>
+      )}
+
       <div className="flex items-center justify-between">
         <div className="flex items-center">
           <div className="p-3 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600">
@@ -120,6 +187,7 @@ export function AITutor() {
           <div className="ml-4">
             <h1 className="text-3xl font-bold text-gray-900">AI Tutor Assistant</h1>
             <p className="text-gray-600">Personalized Junior Secondary tutoring based on Kenya CBC</p>
+            {conversationId && <p className="text-xs text-gray-500">ID: {conversationId.slice(0, 8)}...</p>}
           </div>
         </div>
         <button
@@ -160,18 +228,18 @@ export function AITutor() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Competency Focus</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Grade Level</label>
                 <div className="flex flex-wrap gap-2">
-                  {competencies.map(competency => (
+                  {grades.map(grade => (
                     <button
-                      key={competency}
-                      onClick={() => setSelectedCompetency(competency)}
-                      className={`px-3 py-2 rounded-lg text-sm font-medium border ${selectedCompetency === competency
-                          ? competencyColors[competency]
+                      key={grade}
+                      onClick={() => setSelectedGrade(grade)}
+                      className={`px-3 py-2 rounded-lg text-sm font-medium border ${selectedGrade === grade
+                          ? 'bg-blue-100 text-blue-800 border-blue-200'
                           : 'bg-gray-50 text-gray-700 border-gray-200 hover:bg-gray-100'
                         }`}
                     >
-                      {competency}
+                      Grade {grade}
                     </button>
                   ))}
                 </div>
