@@ -27,4 +27,3 @@ CBE AI Tutor offers:
 - Offline and fallback support, ensuring continuity even when backend services are unavailable
 
 > The AI tutor does not replace teachers. Instead, it acts as a supportive learning companion that reinforces classroom instruction and encourages independent study.
-
