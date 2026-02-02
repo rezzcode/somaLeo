@@ -1,6 +1,6 @@
-# CBC AI Tutor - Junior Secondary Student Assistant
+# CBE AI Tutor - Junior Secondary Student Assistant
 
-A minimal, focused learning platform for Junior Secondary students using Kenya's Competency-Based Curriculum. Features AI-powered tutoring and student profile management.
+A minimal, focused learning platform for Junior Secondary students using Kenya's Competency-Based Education. Features AI-powered tutoring and student profile management.
 
 ## 🚀 Quick Start
 
