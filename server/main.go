@@ -213,7 +213,10 @@ func messagesHandler(w http.ResponseWriter, r *http.Request) {
 			Competency *string `json:"competency,omitempty"`
 			SessionId  *string `json:"sessionId,omitempty"`
 		}
-		if err := json.NewDecoder(r.Body).Decode(&reqBody); err != nil {
+		const maxBodyBytes = 1 << 20 // 1 MiB
+		limitedBody := http.MaxBytesReader(w, r.Body, maxBodyBytes)
+		defer limitedBody.Close()
+		if err := json.NewDecoder(limitedBody).Decode(&reqBody); err != nil {
 			http.Error(w, "Invalid JSON body", http.StatusBadRequest)
 			return
 		}
