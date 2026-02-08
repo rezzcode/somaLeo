@@ -121,18 +121,57 @@ func (a *Agent) Ask(userInput string) (string, error) {
 		return "", err
 	}
 
+	// Handle explicit error object from OpenRouter response.
 	if errObj, ok := result["error"]; ok {
-		return "", errors.New(errObj.(map[string]interface{})["message"].(string))
+		if errMap, ok := errObj.(map[string]interface{}); ok {
+			if msgVal, ok := errMap["message"]; ok {
+				if msgStr, ok := msgVal.(string); ok {
+					return "", errors.New(msgStr)
+				}
+			}
+		}
+		return "", errors.New("unknown error from OpenRouter")
 	}
 
-	choices, ok := result["choices"].([]interface{})
+	// Do not attempt to parse success fields if the HTTP status is not 2xx.
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return "", errors.New("OpenRouter API returned non-2xx status without error message")
+	}
+
+	choicesVal, ok := result["choices"]
+	if !ok {
+		return "", errors.New("no choices in OpenRouter response")
+	}
+
+	choices, ok := choicesVal.([]interface{})
 	if !ok || len(choices) == 0 {
 		return "", errors.New("no response from AI")
 	}
 
-	msg := choices[0].(map[string]interface{})["message"].(map[string]interface{})
-	reply := msg["content"].(string)
+	firstChoice, ok := choices[0].(map[string]interface{})
+	if !ok {
+		return "", errors.New("invalid choice format in OpenRouter response")
+	}
 
+	msgVal, ok := firstChoice["message"]
+	if !ok {
+		return "", errors.New("missing message in OpenRouter response choice")
+	}
+
+	msgMap, ok := msgVal.(map[string]interface{})
+	if !ok {
+		return "", errors.New("invalid message format in OpenRouter response")
+	}
+
+	contentVal, ok := msgMap["content"]
+	if !ok {
+		return "", errors.New("missing content in OpenRouter response message")
+	}
+
+	reply, ok := contentVal.(string)
+	if !ok {
+		return "", errors.New("invalid content type in OpenRouter response message")
+	}
 	a.Messages = append(a.Messages, Message{
 		Role:    "assistant",
 		Content: reply,
