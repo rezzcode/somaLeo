@@ -10,7 +10,7 @@ The platform provides students with guided academic assistance while reinforcing
 
 ## Problem Statement
 
-- Many Junior Secondary learners struggle with:
+Many Junior Secondary learners struggle with:
 - Limited access to individualized academic support
 - Overcrowded classrooms and teacher workload constraints
 - Difficulty connecting subjects to competencies emphasized by CBC
