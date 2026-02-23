@@ -1,0 +1,42 @@
+@import "tailwindcss";
+
+:root {
+  --background: 160 25% 97%;
+  --foreground: 160 30% 10%;
+  --card: 160 20% 99%;
+  --card-foreground: 160 30% 10%;
+  --primary: 152 60% 42%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 160 25% 94%;
+  --secondary-foreground: 160 30% 15%;
+  --muted: 150 15% 93%;
+  --muted-foreground: 160 15% 45%;
+  --accent: 195 100% 50%;
+  --accent-foreground: 195 100% 10%;
+  --destructive: 0 84% 60%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 150 20% 88%;
+  --input: 150 20% 88%;
+  --ring: 152 60% 42%;
+  --radius: 0.75rem;
+  
+  /* Extended palette */
+  --emerald: 152 60% 42%;
+  --emerald-light: 152 55% 95%;
+  --emerald-dark: 152 65% 30%;
+  --teal: 170 55% 45%;
+  --lime: 85 60% 50%;
+  --amber: 45 95% 55%;
+  --coral: 15 85% 60%;
+  --sage: 140 20% 75%;
+  --cyan: 195 100% 50%;
+  --cyan-light: 195 80% 92%;
+  --seagreen: 177 70% 41%;
+  --seagreen-light: 177 50% 92%;
+}
+
+body {
+  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: linear-gradient(135deg, hsl(160 30% 97%) 0%, hsl(177 25% 95%) 50%, hsl(195 30% 96%) 100%);
+  min-height: 100vh;
+}
