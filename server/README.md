@@ -1,7 +1,7 @@
 # Somaleo Server
 
 
-# Usage
+# Usage, to use
 
 ```bash
 go run main.go
