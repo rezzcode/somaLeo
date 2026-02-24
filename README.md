@@ -6,7 +6,7 @@ CBE AI Tutor: An AI-Powered Learning Assistant for Junior Secondary Education in
 
 CBC AI Tutor is a digital learning platform designed to support Junior Secondary students under Kenya’s Competency-Based Education (CBE). The project addresses a critical gap in personalized learning support by combining artificial intelligence with competency-focused education.
 
-The platform provides students with guided academic assistance while reinforcing CBE core competencies such as critical thinking, communication, and self-directed learning.
+The platform provides students with guided assistance. while reinforcing CBE core competencies such as critical thinking, communication, and self-directed learning.
 
 ## Problem Statement
 
